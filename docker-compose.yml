@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/ecommerce
+      - JWT_SECRET=c19fdda5edff3d65ebf5de26992aa2ddbe38818f516bf9db53ec0c94b28536d2
+    depends_on:
+      - mongo
+
+  frontend:
+    build: ./my-ecomerce-store
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./my-ecomerce-store:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
