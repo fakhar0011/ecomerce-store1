@@ -2,10 +2,9 @@
   "compilerOptions": {
     "target": "ES2017",
     "module": "commonjs",
+    // "moduleResolution": "bundler",
     "lib": ["ES2017"],
     "outDir": "./dist",
-    "rootDir": "./",
-    // "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -15,11 +14,10 @@
     "app.ts",
     "config/**/*",
     "models/**/*",
-    "controllers/**/*",
+    "graphql/**/*",
     "routes/**/*",
-    "middlewares/**/*",
-    "services/**/*",
-    "utils/**/*"
+    "controllers/**/*",
+    "middlewares/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }

@@ -37,7 +37,6 @@ export const initSocket = (server: http.Server) => {
     // Admin users join the 'admin' room
     if (socket.data.userRole === "admin") {
       socket.join("admin");
-      console.log("Admin joined admin room");
     }
 
     socket.on("disconnect", () => {

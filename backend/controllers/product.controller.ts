@@ -1,10 +1,6 @@
 import { Request, Response } from "express";
 import ProductModel from "../models/Product";
 
-// ━━━━━━━━━━━━━━━━━━━━
-// Get All Products
-// ━━━━━━━━━━━━━━━━━━━━
-
 export const getProducts = async (req: Request, res: Response) => {
   try {
     const { category } = req.query;
@@ -19,41 +15,21 @@ export const getProducts = async (req: Request, res: Response) => {
   }
 };
 
-// ━━━━━━━━━━━━━━━━━━━━
-// Get Single Product
-// ━━━━━━━━━━━━━━━━━━━━
-
 export const getProduct = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
     const product = await ProductModel.findById(req.params.id);
-
     if (!product) {
-      res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
-
+      res.status(404).json({ success: false, message: "Product not found" });
       return;
     }
-
-    res.status(200).json({
-      success: true,
-      data: product,
-    });
+    res.status(200).json({ success: true, data: product });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
-
-// ━━━━━━━━━━━━━━━━━━━━
-// Create Product
-// ━━━━━━━━━━━━━━━━━━━━
 
 export const createProduct = async (
   req: Request,
@@ -62,22 +38,17 @@ export const createProduct = async (
   try {
     const { name, price, category, stock } = req.body;
 
-    // Image required
-    if (!req.file) {
-      res.status(400).json({
-        success: false,
-        message: "Image is required",
-      });
-
+    // ✅ Type assertion to bypass TypeScript error
+    const file = (req as any).file;
+    if (!file) {
+      res.status(400).json({ success: false, message: "Image is required" });
       return;
     }
 
-    // Upload image to ImageKit
     const { uploadImage } = await import("../services/imagekit.service");
 
-    const imageResult = await uploadImage(req.file);
+    const imageResult = await uploadImage(file);
 
-    // Create product
     const product = await ProductModel.create({
       name,
       price,
@@ -86,73 +57,43 @@ export const createProduct = async (
       image: imageResult.url,
     });
 
-    res.status(201).json({
-      success: true,
-      message: "Product Created",
-      data: product,
-    });
+    res
+      .status(201)
+      .json({ success: true, message: "Product Created", data: product });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Product not created",
-    });
+    res.status(500).json({ success: false, message: "Product not created" });
   }
 };
-
-// ━━━━━━━━━━━━━━━━━━━━
-// Update Product
-// ━━━━━━━━━━━━━━━━━━━━
 
 export const updateProduct = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const updateData: any = {
-      ...req.body,
-    };
-
-    // New image upload
-    if (req.file) {
+    const updateData: any = { ...req.body };
+    const file = (req as any).file;
+    if (file) {
       const { uploadImage } = await import("../services/imagekit.service");
-
-      const imageResult = await uploadImage(req.file);
-
+      const imageResult = await uploadImage(file);
       updateData.image = imageResult.url;
     }
 
-    // Update product
     const product = await ProductModel.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true },
     );
-
     if (!product) {
-      res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
-
+      res.status(404).json({ success: false, message: "Product not found" });
       return;
     }
-
-    res.status(200).json({
-      success: true,
-      message: "Product Updated",
-      data: product,
-    });
+    res
+      .status(200)
+      .json({ success: true, message: "Product Updated", data: product });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Product not updated",
-    });
+    res.status(500).json({ success: false, message: "Product not updated" });
   }
 };
-
-// ━━━━━━━━━━━━━━━━━━━━
-// Delete Product
-// ━━━━━━━━━━━━━━━━━━━━
 
 export const deleteProduct = async (
   req: Request,
@@ -160,24 +101,12 @@ export const deleteProduct = async (
 ): Promise<void> => {
   try {
     const product = await ProductModel.findByIdAndDelete(req.params.id);
-
     if (!product) {
-      res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
-
+      res.status(404).json({ success: false, message: "Product not found" });
       return;
     }
-
-    res.status(200).json({
-      success: true,
-      message: "Product Deleted",
-    });
+    res.status(200).json({ success: true, message: "Product Deleted" });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Product not deleted",
-    });
+    res.status(500).json({ success: false, message: "Product not deleted" });
   }
 };

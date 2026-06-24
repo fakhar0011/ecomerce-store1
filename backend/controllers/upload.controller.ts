@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { uploadImage } from "../services/imagekit.service";
-import { AppError } from "../middlewares/errorHandler";
+import { uploadImage } from "../services/imagekit.service.js";
+import { AppError } from "../middlewares/errorHandler.js";
 
 export const uploadProductImage = async (
     req: Request,

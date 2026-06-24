@@ -9,41 +9,22 @@ import {
 import {
   getAdminNotifications,
   markAdminNotificationRead,
-} from "../controllers/adminNotification.controller"; // ← import
+} from "../controllers/adminNotification.controller";
 import authMiddleware from "../middlewares/auth";
 import { adminOnly } from "../middlewares/admin";
 
 const router = Router();
 
-// ━━━━━━━━━━━━━━━━━━━━
-// User Routes (Protected)
-// ━━━━━━━━━━━━━━━━━━━━
+// User Routes
 router.get("/my-orders", authMiddleware, getMyOrders);
 router.post("/", authMiddleware, createOrder);
 
-// ━━━━━━━━━━━━━━━━━━━━
-// Admin Routes (Protected + Admin Only)
-// ━━━━━━━━━━━━━━━━━━━━
-router.get(
-  "/admin",
-  authMiddleware,
-  adminOnly,
-  (req, res, next) => {
-    if (!getAllOrders) {
-      return res
-        .status(500)
-        .json({ success: false, message: "Controller missing" });
-    }
-    next();
-  },
-  getAllOrders,
-);
+// Admin Routes
+router.get("/admin", authMiddleware, adminOnly, getAllOrders);
 router.put("/:id/status", authMiddleware, adminOnly, updateOrderStatus);
 router.get("/:id", authMiddleware, getOrder);
 
-// ━━━━━━━━━━━━━━━━━━━━
 // Admin Notification Routes
-// ━━━━━━━━━━━━━━━━━━━━
 router.get(
   "/admin/notifications",
   authMiddleware,

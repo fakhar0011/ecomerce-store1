@@ -1,9 +1,9 @@
 import { Router } from "express";
 import multer from "multer";
-import { uploadProductImage } from "../controllers/upload.controller";
-// import { protect } from "../middlewares/auth";
-import { adminOnly } from "../middlewares/admin";
-// import { uploadLimiter } from "../middlewares/rateLimiter";
+import { uploadProductImage } from "../controllers/upload.controller.js";
+// import { protect } from "../middlewares/auth.js";
+import { adminOnly } from "../middlewares/admin.js";
+// import { uploadLimiter } from "../middlewares/rateLimiter.js";
 
 const router = Router();
 

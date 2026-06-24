@@ -6,6 +6,9 @@ export interface IProduct extends Document {
   image: string;
   category: string;
   stock: number;
+  badge?: string;
+  rating?: number;
+  reviews?: number;
 }
 
 const ProductSchema = new Schema(
@@ -34,6 +37,13 @@ const ProductSchema = new Schema(
       type: Number,
       default: 0,
     },
+    badge: {
+      type: String,
+      enum: ["New", "Hot", "Sale", "Exclusive"],
+      default: "",
+    },
+    rating: { type: Number, default: 0 },
+    reviews: { type: Number, default: 0 },
   },
   {
     timestamps: true,

@@ -57,13 +57,7 @@ export const errorHandler = (
   error.message = err.message;
   error.statusCode = err.statusCode || 500;
 
-  // ← Development mein puri detail dikhao
   if (process.env.NODE_ENV === "development") {
-    console.error("❌ Error:", {
-      message: err.message,
-      stack: err.stack,
-      statusCode: error.statusCode,
-    });
   }
 
   // ← Mongoose errors
