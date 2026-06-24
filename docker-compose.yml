@@ -3,35 +3,57 @@ version: "3.8"
 services:
   backend:
     build: ./backend
+    container_name: app-backend
     ports:
       - "5000:5000"
     volumes:
       - ./backend:/app
       - /app/node_modules
     environment:
+      - PORT=5000
       - MONGO_URI=mongodb://mongo:27017/ecommerce
       - JWT_SECRET=c19fdda5edff3d65ebf5de26992aa2ddbe38818f516bf9db53ec0c94b28536d2
+      - REDIS_URL=redis://redis:6379
+      - FRONTEND_URL=http://frontend:3000
+      - NODE_ENV=development
     depends_on:
       - mongo
+      - redis
+    restart: unless-stopped
 
   frontend:
     build: ./my-ecomerce-store
+    container_name: app-frontend
     ports:
       - "3000:3000"
     volumes:
       - ./my-ecomerce-store:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+      - NEXT_PUBLIC_GRAPHQL_URL=http://backend:5000/graphql
+      - NEXT_PUBLIC_WS_URL=ws://backend:5000/graphql
     depends_on:
       - backend
+    restart: unless-stopped
 
   mongo:
     image: mongo:6
+    container_name: app-mongo
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: app-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
 
 volumes:
   mongo_data:
+  redis_data:
