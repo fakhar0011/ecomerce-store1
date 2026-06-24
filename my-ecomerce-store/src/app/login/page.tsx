@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useAppDispatch } from "@/store/hooks";
 import { setUser } from "@/store/slices/authSlice";
-import { loginService } from "@/lib/auth.service";
+import { useMutation } from "@apollo/client/react";
+import { LOGIN, LoginResponse } from "@/graphql/mutations";
 
 interface LoginForm {
   email: string;
@@ -19,6 +20,7 @@ function LoginContent() {
   const successMsg = searchParams.get("success");
   const dispatch = useAppDispatch();
 
+  const [login] = useMutation<LoginResponse>(LOGIN);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
 
@@ -33,29 +35,27 @@ function LoginContent() {
     setApiError("");
 
     try {
-      //  Backend login call – service function
-      const response = await loginService({
-        email: data.email,
-        password: data.password,
+      const result = await login({
+        variables: { email: data.email, password: data.password },
       });
 
-      if (response.success) {
-        dispatch(
-          setUser({
-            id: response.user.id,
-            name: response.user.name,
-            email: response.user.email,
-            role: response.user.role,
-          }),
-        );
-        router.push("/products");
-        router.refresh();
-      } else {
-        setApiError(response.message || "Login failed");
-      }
+      const { token, user } = result.data!.login;
+      localStorage.setItem("token", token);
+      dispatch(
+        setUser({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role as "user" | "admin",
+        }),
+      );
+      router.push("/products");
+      router.refresh();
     } catch (err: any) {
       setApiError(
-        err.response?.data?.message || err.message || "Something went wrong",
+        err.graphQLErrors?.[0]?.message ||
+          err.message ||
+          "Something went wrong",
       );
     } finally {
       setLoading(false);

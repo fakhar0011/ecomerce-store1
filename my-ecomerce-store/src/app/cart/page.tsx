@@ -3,7 +3,11 @@
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAppDispatch, useCartSelector } from "@/store/hooks";
+import {
+  useAppDispatch,
+  useCartSelector,
+  useAuthSelector,
+} from "@/store/hooks";
 import {
   removeFromCart,
   updateQuantity,
@@ -15,6 +19,7 @@ export default function CartPage() {
   const dispatch = useAppDispatch();
   const { items } = useCartSelector();
   const router = useRouter();
+  const { isAuthenticated } = useAuthSelector();
 
   const totalItems = items.length;
 
@@ -27,10 +32,12 @@ export default function CartPage() {
   }, [items]);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isAuthenticated) {
       router.replace("/login");
     }
-  }, [status, router]);
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) return null;
 
   // ← Yeh fix — login nahi toh kuch mat dikhao
   if (status === "loading" || status === "unauthenticated") {

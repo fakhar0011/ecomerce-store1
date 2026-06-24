@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import { FilterType } from "@/types";
-import {
-  useAppDispatch,
-  useProductSelector,
-  useCartSelector,
-} from "@/store/hooks";
-import { fetchProducts } from "@/store/slices/productSlice";
+import { useAppDispatch, useCartSelector } from "@/store/hooks";
 import ProductCard from "@/components/ProductCard";
+import { useQuery } from "@apollo/client/react";
+import { GET_PRODUCTS, ProductsResponse } from "@/graphql/queries";
+import { useState } from "react";
 
 export default function ProductsPage() {
-  const dispatch = useAppDispatch();
-  const { products, loading, error, selectedFilter } = useProductSelector();
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
+  const { loading, error, data } = useQuery<ProductsResponse>(GET_PRODUCTS);
+  // const dispatch = useAppDispatch();
   const cartState = useCartSelector() as any;
   const totalItems =
     cartState.totalItems ??
@@ -24,9 +22,11 @@ export default function ProductsPage() {
     ) ??
     0;
 
-  useEffect(() => {
-    dispatch(fetchProducts("all"));
-  }, [dispatch]);
+  const products = data?.products || [];
+  const filteredProducts =
+    selectedFilter === "all"
+      ? products
+      : products.filter((p: any) => p.category === selectedFilter);
 
   const filters: FilterType[] = [
     "all",
@@ -51,7 +51,7 @@ export default function ProductsPage() {
             {filters.map((cat) => (
               <button
                 key={cat}
-                onClick={() => dispatch(fetchProducts(cat))}
+                onClick={() => setSelectedFilter(cat)}
                 className={`px-4 py-2 rounded-lg text-sm capitalize transition
                   ${
                     selectedFilter === cat
@@ -76,7 +76,7 @@ export default function ProductsPage() {
 
         {error && (
           <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl mb-6">
-            {error}
+            {error.message}
           </div>
         )}
 
@@ -89,7 +89,7 @@ export default function ProductsPage() {
               />
             ))}
           </div>
-        ) : products.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-24 text-gray-400">
             <p className="text-6xl mb-4">📦</p>
             <p className="text-xl font-medium text-gray-500">
@@ -99,10 +99,10 @@ export default function ProductsPage() {
         ) : (
           <>
             <p className="text-sm text-gray-500 mb-4">
-              {products.length} products found
+              {filteredProducts.length} products found
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((product) => (
+              {filteredProducts.map((product: any) => (
                 <ProductCard key={product._id} product={product} />
               ))}
             </div>

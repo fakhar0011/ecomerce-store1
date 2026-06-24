@@ -6,7 +6,8 @@ import ReduxProvider from "@/store/provider";
 import AuthProvider from "@/components/AuthProvider";
 import { ToastContainer } from "react-toastify";
 import NotificationListener from "@/components/NotificationListener";
-import AdminNotificationFetcher from "@/components/AdminNotificationFetcher"; // ✅ import
+import AdminNotificationFetcher from "@/components/AdminNotificationFetcher";
+import ApolloWrapper from "@/components/ApolloWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,25 +34,26 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
-        <ReduxProvider>
-          <AuthProvider>
-            <AdminNotificationFetcher />{" "}
-            {/* ← fetches pending admin notifications from DB */}
-            <Navbar />
-            {children}
-            <NotificationListener />
-            <ToastContainer
-              position="top-right"
-              autoClose={2000}
-              hideProgressBar={false}
-              newestOnTop={true}
-              closeOnClick={true}
-              pauseOnHover={false}
-              draggable={true}
-              theme="light"
-            />
-          </AuthProvider>
-        </ReduxProvider>
+        <ApolloWrapper>
+          <ReduxProvider>
+            <AuthProvider>
+              <AdminNotificationFetcher />
+              <Navbar />
+              {children}
+              <NotificationListener />
+              <ToastContainer
+                position="top-right"
+                autoClose={2000}
+                hideProgressBar={false}
+                newestOnTop={true}
+                closeOnClick={true}
+                pauseOnHover={false}
+                draggable={true}
+                theme="light"
+              />
+            </AuthProvider>
+          </ReduxProvider>
+        </ApolloWrapper>
       </body>
     </html>
   );

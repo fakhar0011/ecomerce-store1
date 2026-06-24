@@ -1,53 +1,56 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useEffect } from "react";
 import { useAuthSelector } from "@/store/hooks";
 import { useAppDispatch } from "@/store/hooks";
 import { addNotification } from "@/store/slices/notificationSlice";
-import { getAdminNotifications } from "@/lib/admin.service";
+import { useQuery } from "@apollo/client/react";
+import {
+  GET_ADMIN_NOTIFICATIONS,
+  AdminNotificationsResponse,
+} from "@/graphql/queries";
 
 export default function AdminNotificationFetcher() {
   const { isAdmin, isAuthenticated } = useAuthSelector();
   const dispatch = useAppDispatch();
-  const [token, setToken] = useState<string | null>(null);
 
-  // Watch localStorage token changes (login/logout)
+  // Query admin notifications – only when admin is logged in
+  const { data, error, startPolling, stopPolling } =
+    useQuery<AdminNotificationsResponse>(GET_ADMIN_NOTIFICATIONS, {
+      skip: !isAuthenticated || !isAdmin,
+      fetchPolicy: "network-only", // always fetch fresh from server
+    });
+
+  // Poll every 30 seconds for new notifications while admin is active
   useEffect(() => {
-    const handleStorageChange = () => {
-      setToken(localStorage.getItem("token"));
-    };
-    // Initial read
-    setToken(localStorage.getItem("token"));
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+    if (isAuthenticated && isAdmin) {
+      startPolling(30000);
+    } else {
+      stopPolling();
+    }
+    return () => stopPolling();
+  }, [isAuthenticated, isAdmin, startPolling, stopPolling]);
 
+  // Dispatch notifications to Redux when data arrives
   useEffect(() => {
-    // Only fetch when admin is authenticated, token exists, and we have not fetched for this token
-    if (!isAuthenticated || !isAdmin || !token) return;
+    if (data?.adminNotifications?.length) {
+      data.adminNotifications.forEach((notif) => {
+        dispatch(
+          addNotification({
+            title: "📦 New Order",
+            message: notif.message,
+            type: "info",
+            orderId: notif.orderId,
+            dbId: notif._id,
+          }),
+        );
+      });
+    }
+  }, [data, dispatch]);
 
-    const fetchNotifications = async () => {
-      try {
-        const res = await getAdminNotifications();
-        if (res.success && res.data.length) {
-          res.data.forEach((notif: any) => {
-            dispatch(
-              addNotification({
-                title: "📦 New Order",
-                message: notif.message,
-                type: "info",
-                orderId: notif.orderId,
-                dbId: notif._id,
-              }),
-            );
-          });
-        }
-      } catch (err) {
-        console.error("Failed to fetch admin notifications", err);
-      }
-    };
-
-    fetchNotifications();
-  }, [token, isAuthenticated, isAdmin, dispatch]); // 👈 re‑runs when token changes (after login)
+  if (error) {
+    console.error("Failed to fetch admin notifications (GraphQL):", error);
+  }
 
   return null;
 }

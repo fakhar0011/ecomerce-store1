@@ -30,7 +30,7 @@ api.interceptors.request.use(
     return config;
   },
   (error: AxiosError) => {
-    console.error("Request interceptor error:", error.message);
+    // console.error("Request interceptor error:", error.message);
     return Promise.reject(error);
   },
 );

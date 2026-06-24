@@ -1,15 +1,39 @@
 "use client";
 
 import { useEffect } from "react";
-import { useSocket } from "@/hooks/useSocket";
-import { useAuthSelector } from "@/store/hooks";
+import { useSubscription } from "@apollo/client/react";
+import { gql } from "@apollo/client";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAuthSelector } from "@/store/hooks";
 import {
   addNotification,
   setNotifications,
 } from "@/store/slices/notificationSlice";
 import { toast } from "react-toastify";
 
+/* ---------------- GraphQL Subscription ---------------- */
+const ORDER_NOTIFICATION_SUB = gql`
+  subscription {
+    orderNotification {
+      title
+      message
+      type
+      orderId
+    }
+  }
+`;
+
+/* ---------------- TypeScript Types ---------------- */
+type OrderNotificationData = {
+  orderNotification: {
+    title: string;
+    message: string;
+    type: "error" | "success" | "info";
+    orderId: string;
+  };
+};
+
+/* ---------------- LocalStorage Helpers ---------------- */
 const loadFromLocalStorage = () => {
   if (typeof window === "undefined") return [];
   const stored = localStorage.getItem("notifications");
@@ -24,13 +48,13 @@ const saveToLocalStorage = (notifications: any[]) => {
   );
 };
 
+/* ---------------- Component ---------------- */
 export default function NotificationListener() {
   const { isAuthenticated } = useAuthSelector();
-  const { isConnected, on, off } = useSocket();
   const dispatch = useAppDispatch();
   const notifications = useAppSelector((state) => state.notifications.items);
 
-  // Load from localStorage on mount
+  /* Load saved notifications once */
   useEffect(() => {
     const stored = loadFromLocalStorage();
     if (stored.length > 0) {
@@ -38,36 +62,44 @@ export default function NotificationListener() {
     }
   }, [dispatch]);
 
-  // Save to localStorage whenever Redux notifications change
+  /* Save to localStorage whenever Redux updates */
   useEffect(() => {
     saveToLocalStorage(notifications);
   }, [notifications]);
 
-  // Socket event handler – only when socket is connected and user authenticated
+  /* Apollo Subscription */
+  const { data } = useSubscription<OrderNotificationData>(
+    ORDER_NOTIFICATION_SUB,
+    {
+      skip: !isAuthenticated,
+    },
+  );
+
+  /* Handle incoming notifications */
   useEffect(() => {
-    if (!isAuthenticated || !isConnected) return;
+    if (data?.orderNotification) {
+      // Destructure and assert type
+      const { title, message, type, orderId } = data.orderNotification;
 
-    const handler = (data: any) => {
-      console.log("🔔 New order notification received:", data); // 👈 important log
+      console.log("🔔 New order notification:", data);
 
-      if (data.type === "success") toast.success(data.message);
-      else if (data.type === "error") toast.error(data.message);
-      else toast.info(data.message);
+      // ✅ Cast type to the union expected by addNotification
+      const notificationType = type as "error" | "success" | "info";
+
+      if (type === "success") toast.success(message);
+      else if (type === "error") toast.error(message);
+      else toast.info(message);
 
       dispatch(
         addNotification({
-          title: data.title || "Notification",
-          message: data.message,
-          type: data.type,
-          orderId: data.orderId,
-          // 👇 Add dbId if it's from offline fetch (already handled in AdminNotificationFetcher)
+          title: title || "Notification",
+          message,
+          type: notificationType, // ✅ now matches the expected union
+          orderId,
         }),
       );
-    };
-
-    on("order-status", handler);
-    return () => off("order-status", handler);
-  }, [isAuthenticated, isConnected, on, off, dispatch]);
+    }
+  }, [data, dispatch]);
 
   return null;
 }

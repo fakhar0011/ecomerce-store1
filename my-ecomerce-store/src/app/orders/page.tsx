@@ -4,20 +4,19 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthSelector } from "@/store/hooks";
-import { getMyOrdersService } from "@/lib/order.service";
-import { toast } from "react-toastify";
+import { useQuery } from "@apollo/client/react";
+import { GET_MY_ORDERS, MyOrdersResponse } from "@/graphql/queries";
 
 interface Order {
   _id: string;
   items: {
-    productId: string;
     name: string;
     price: number;
     quantity: number;
     image: string;
   }[];
   totalAmount: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status: string;
   createdAt: string;
 }
 
@@ -27,35 +26,22 @@ function OrdersContent() {
   const successMsg = searchParams.get("success");
   const { isAuthenticated } = useAuthSelector();
 
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // ✅ GraphQL Query
+  const { loading, error, data } = useQuery<MyOrdersResponse>(GET_MY_ORDERS, {
+    skip: !isAuthenticated,
+    fetchPolicy: "network-only",
+  });
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace("/login");
-      return;
     }
-
-    const fetchOrders = async () => {
-      try {
-        const response = await getMyOrdersService();
-        if (response.success) {
-          setOrders(response.data);
-        } else {
-          setError(response.message || "Failed to load orders");
-        }
-      } catch (err: any) {
-        setError(err.message || "Something went wrong");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
   }, [isAuthenticated, router]);
 
   if (!isAuthenticated) return null;
+
+  const orders: Order[] = data?.orders || [];
+  const queryError = error?.message || "";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -88,9 +74,9 @@ function OrdersContent() {
           </div>
         )}
 
-        {error && (
+        {queryError && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-5 text-sm">
-            ❌ {error}
+            ❌ {queryError}
           </div>
         )}
 
@@ -134,7 +120,16 @@ function OrdersContent() {
                   <div>
                     <p className="text-sm text-gray-500">Date</p>
                     <p className="text-sm font-medium">
-                      {new Date(order.createdAt).toLocaleDateString()}
+                      {order.createdAt
+                        ? new Date(Number(order.createdAt)).toLocaleDateString(
+                            "en-PK",
+                            {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            },
+                          )
+                        : "N/A"}
                     </p>
                   </div>
                   <div>

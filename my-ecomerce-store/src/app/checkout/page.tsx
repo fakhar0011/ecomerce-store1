@@ -10,7 +10,9 @@ import {
   useAuthSelector,
 } from "@/store/hooks";
 import { clearCart } from "@/store/slices/cartSlice";
-import { createOrderService } from "@/lib/order.service";
+import { useMutation } from "@apollo/client/react";
+import { CREATE_ORDER, CreateOrderResponse } from "@/graphql/mutations";
+import { GET_PRODUCTS, ProductsResponse } from "@/graphql/queries";
 import { toast } from "react-toastify";
 
 interface ShippingForm {
@@ -28,6 +30,45 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [orderItems, setOrderItems] = useState<any[]>([]);
+
+  // ✅ GraphQL Mutation with cache update
+  const [createOrder] = useMutation<CreateOrderResponse>(CREATE_ORDER, {
+    update: (cache, { data }) => {
+      if (!data?.createOrder || orderItems.length === 0) return;
+
+      // ✅ Cache se purani products list lo
+      const existingData = cache.readQuery<ProductsResponse>({
+        query: GET_PRODUCTS,
+      });
+
+      if (!existingData) return;
+
+      // ✅ Stock update karo
+      const updatedProducts = existingData.products.map((product) => {
+        const orderedItem = orderItems.find(
+          (item) => item.productId === product._id,
+        );
+        if (orderedItem) {
+          return {
+            ...product,
+            stock: Math.max(0, product.stock - orderedItem.quantity),
+          };
+        }
+        return product;
+      });
+
+      // ✅ Cache update karo
+      cache.writeQuery({
+        query: GET_PRODUCTS,
+        data: {
+          products: updatedProducts,
+        },
+      });
+
+      console.log("✅ Cache updated with new stock values");
+    },
+  });
 
   const {
     register,
@@ -42,6 +83,16 @@ export default function CheckoutPage() {
     if (items.length === 0) {
       router.replace("/products");
     }
+    // ✅ orderItems ko state mein store karo taake update function mein access ho
+    setOrderItems(
+      items.map((item) => ({
+        productId: item.product._id,
+        name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+        image: item.product.image || "",
+      })),
+    );
   }, [isAuthenticated, items, router]);
 
   if (!isAuthenticated) return null;
@@ -51,31 +102,39 @@ export default function CheckoutPage() {
     setApiError("");
 
     try {
-      const orderItems = items.map((item) => ({
-        productId: item.product._id,
-        name: item.product.name,
-        price: item.product.price,
-        quantity: item.quantity,
-        image: item.product.image || "",
-      }));
+      const result = await createOrder({
+        variables: {
+          items: orderItems,
+          shippingAddress: {
+            fullName: data.fullName,
+            phone: data.phone,
+            address: data.address,
+            city: data.city,
+            postalCode: data.postalCode,
+          },
+        },
+      });
 
-      const response = await createOrderService(orderItems, data);
-
-      if (response.success) {
+      if (result.data?.createOrder) {
         dispatch(clearCart());
         toast.success("✅ Order placed successfully!");
-        router.push(`/orders?success=Order placed! ID: ${response.data._id}`);
+        router.push(
+          `/orders?success=Order placed! ID: ${result.data.createOrder._id}`,
+        );
       } else {
-        throw new Error(response.message || "Order failed");
+        throw new Error("Order failed");
       }
     } catch (err: any) {
-      setApiError(err.message || "Order failed");
+      const message =
+        err.graphQLErrors?.[0]?.message || err.message || "Order failed";
+      setApiError(message);
       toast.error("❌ Order failed!");
     } finally {
       setLoading(false);
     }
   };
 
+  // ... JSX same rahega
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-6">
       <div className="max-w-5xl mx-auto">
@@ -112,7 +171,11 @@ export default function CheckoutPage() {
                       required: "Full name is required",
                       minLength: { value: 2, message: "Minimum 2 characters" },
                     })}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.fullName ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                      errors.fullName
+                        ? "border-red-400 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
                   {errors.fullName && (
                     <p className="text-red-500 text-xs mt-1">
@@ -135,7 +198,11 @@ export default function CheckoutPage() {
                         message: "Must be 10-11 digits",
                       },
                     })}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.phone ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                      errors.phone
+                        ? "border-red-400 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
                   {errors.phone && (
                     <p className="text-red-500 text-xs mt-1">
@@ -155,7 +222,11 @@ export default function CheckoutPage() {
                       required: "Address is required",
                       minLength: { value: 5, message: "Minimum 5 characters" },
                     })}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.address ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                      errors.address
+                        ? "border-red-400 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
                   {errors.address && (
                     <p className="text-red-500 text-xs mt-1">
@@ -173,7 +244,11 @@ export default function CheckoutPage() {
                       type="text"
                       placeholder="Lahore"
                       {...register("city", { required: "City is required" })}
-                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.city ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                        errors.city
+                          ? "border-red-400 bg-red-50"
+                          : "border-gray-300"
+                      }`}
                     />
                     {errors.city && (
                       <p className="text-red-500 text-xs mt-1">
@@ -195,7 +270,11 @@ export default function CheckoutPage() {
                           message: "Must be 5 digits",
                         },
                       })}
-                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.postalCode ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                        errors.postalCode
+                          ? "border-red-400 bg-red-50"
+                          : "border-gray-300"
+                      }`}
                     />
                     {errors.postalCode && (
                       <p className="text-red-500 text-xs mt-1">
@@ -208,7 +287,11 @@ export default function CheckoutPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full py-3 rounded-xl font-medium text-sm transition mt-2 ${loading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-gray-900 hover:bg-gray-700 text-white"}`}
+                  className={`w-full py-3 rounded-xl font-medium text-sm transition mt-2 ${
+                    loading
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-gray-900 hover:bg-gray-700 text-white"
+                  }`}
                 >
                   {loading
                     ? "⏳ Placing order..."

@@ -9,12 +9,18 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@apollo/client": "^4.2.3",
+    "@apollo/server": "^5.5.1",
     "@reduxjs/toolkit": "^2.11.2",
+    "@types/apollo-upload-client": "^19.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/multer": "^2.1.0",
     "@types/nodemailer": "^8.0.0",
+    "apollo-upload-client": "^19.0.0",
     "axios": "^1.16.0",
     "bcryptjs": "^3.0.3",
+    "graphql": "^16.14.2",
+    "graphql-ws": "^6.0.8",
     "imagekit": "^6.0.0",
     "mongoose": "^9.5.0",
     "multer": "^2.1.1",

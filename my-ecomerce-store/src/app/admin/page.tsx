@@ -5,12 +5,16 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useAuthSelector } from "@/store/hooks";
 import { toast } from "react-toastify";
+import { useQuery, useMutation } from "@apollo/client/react";
+import { GET_PRODUCTS, ProductsResponse } from "@/graphql/queries";
 import {
-  getProductsService,
-  createProductService,
-  updateProductService,
-  deleteProductService,
-} from "@/lib/product.service";
+  CREATE_PRODUCT,
+  UPDATE_PRODUCT,
+  DELETE_PRODUCT,
+  CreateProductResponse,
+  UpdateProductResponse,
+  DeleteProductResponse,
+} from "@/graphql/mutations";
 import { Product } from "@/types";
 
 interface ProductForm {
@@ -37,8 +41,19 @@ export default function AdminPage() {
   const router = useRouter();
   const { isAdmin, isAuthenticated } = useAuthSelector();
 
+  const {
+    loading: queryLoading,
+    error: queryError,
+    data,
+    refetch,
+  } = useQuery<ProductsResponse>(GET_PRODUCTS);
+
+  // ✅ Mutations with file upload support
+  const [createProduct] = useMutation<CreateProductResponse>(CREATE_PRODUCT);
+  const [updateProduct] = useMutation<UpdateProductResponse>(UPDATE_PRODUCT);
+  const [deleteProduct] = useMutation<DeleteProductResponse>(DELETE_PRODUCT);
+
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState("");
   const [apiError, setApiError] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
@@ -54,28 +69,18 @@ export default function AdminPage() {
     formState: { errors },
   } = useForm<ProductForm>({ defaultValues: emptyForm });
 
-  // Auth check
   useEffect(() => {
     if (!isAuthenticated) router.push("/login");
     else if (!isAdmin) router.push("/products");
   }, [isAuthenticated, isAdmin, router]);
 
-  // Fetch products
   useEffect(() => {
-    if (isAdmin) fetchProducts();
-  }, [isAdmin]);
+    if (data?.products) {
+      setProducts(data.products as Product[]);
+    }
+  }, [data]);
 
   if (!isAuthenticated || !isAdmin) return null;
-
-  const fetchProducts = async () => {
-    try {
-      const res = await getProductsService();
-      if (res.success) setProducts(res.data);
-      else console.error("Failed to load products");
-    } catch (err: any) {
-      console.error("Products fetch error:", err.message);
-    }
-  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -104,13 +109,9 @@ export default function AdminPage() {
     if (!confirm("Are you sure you want to delete this product?")) return;
     setDeleteLoadingId(id);
     try {
-      const res = await deleteProductService(id);
-      if (res.success) {
-        toast.success("✅ Product deleted successfully!");
-        fetchProducts();
-      } else {
-        throw new Error(res.message || "Delete failed");
-      }
+      await deleteProduct({ variables: { id } });
+      toast.success("✅ Product deleted successfully!");
+      refetch();
     } catch (err: any) {
       toast.error(`❌ ${err.message}`);
     } finally {
@@ -121,55 +122,65 @@ export default function AdminPage() {
   const onSubmit = async (data: ProductForm) => {
     setLoading(true);
     setApiError("");
-    setSuccess("");
 
     try {
-      const formData = new FormData();
-      formData.append("name", data.name);
-      formData.append("price", String(data.price));
-      formData.append("category", data.category);
-      formData.append("stock", String(data.stock));
-      formData.append("badge", data.badge || "");
-      formData.append("rating", String(data.rating || 0));
-      formData.append("reviews", String(data.reviews || 0));
-      if (imageFile) formData.append("image", imageFile);
+      // ✅ For edit: keep existing image URL if no new file selected
+      let imageUrl = editingId
+        ? products.find((p) => p._id === editingId)?.image || ""
+        : "";
 
-      let result;
+      const input = {
+        name: data.name,
+        price: Number(data.price),
+        image: imageUrl,
+        category: data.category,
+        stock: Number(data.stock),
+        badge: data.badge || "",
+        rating: Number(data.rating) || 0,
+        reviews: Number(data.reviews) || 0,
+      };
+
       if (editingId) {
-        result = await updateProductService(editingId, formData);
-        if (result.success) {
-          toast.success("✅ Product updated successfully!");
-        } else {
-          throw new Error(result.message || "Update failed");
-        }
+        // ✅ Update: pass file only if a new image is selected
+        await updateProduct({
+          variables: {
+            id: editingId,
+            input,
+            file: imageFile,
+          },
+        });
+        toast.success("✅ Product updated successfully!");
       } else {
         if (!imageFile) {
-          setApiError("Image is required for new products");
+          setApiError("Please select an image");
           setLoading(false);
           return;
         }
-        result = await createProductService(formData);
-        if (result.success) {
-          toast.success("✅ Product added successfully!");
-        } else {
-          throw new Error(result.message || "Create failed");
-        }
+        await createProduct({
+          variables: {
+            input,
+            file: imageFile,
+          },
+        });
+        toast.success("✅ Product added successfully!");
       }
 
       reset(emptyForm);
       setImageFile(null);
       setImagePreview("");
       setEditingId(null);
-      setSuccess(editingId ? "✅ Product updated!" : "✅ Product added!");
-      fetchProducts();
+      refetch();
     } catch (err: any) {
-      setApiError(err.message || "❌ Operation failed!");
-      toast.error("❌ Operation failed!");
+      const errorMsg =
+        err.graphQLErrors?.[0]?.message || err.message || "Operation failed";
+      setApiError(errorMsg);
+      toast.error(`❌ ${errorMsg}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // ---------- JSX ----------
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-6">
       <div className="max-w-2xl mx-auto">
@@ -200,12 +211,6 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* Success/Error messages */}
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6">
-            ✅ {success}
-          </div>
-        )}
         {apiError && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-6">
             ❌ {apiError}

@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useAppDispatch } from "@/store/hooks";
 import { setUser } from "@/store/slices/authSlice";
-import { signupService } from "@/lib/auth.service";
+import { useMutation } from "@apollo/client/react";
+import { SIGNUP, SignupResponse } from "@/graphql/mutations";
 import { toast } from "react-toastify";
 
 interface SignupForm {
@@ -23,6 +24,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
 
+  const [signup] = useMutation<SignupResponse>(SIGNUP);
   const {
     register,
     handleSubmit,
@@ -40,19 +42,23 @@ export default function SignupPage() {
     setApiError("");
 
     try {
-      const result = await signupService({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: data.role,
+      const result = await signup({
+        variables: {
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+        },
       });
 
+      const { token, user } = result.data!.signup;
+      localStorage.setItem("token", token);
       dispatch(
         setUser({
-          id: result.user.id,
-          name: result.user.name,
-          email: result.user.email,
-          role: result.user.role,
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role as "user" | "admin",
         }),
       );
 
@@ -60,8 +66,7 @@ export default function SignupPage() {
       router.push("/products");
     } catch (err: any) {
       setApiError(
-        err.response?.data?.error ||
-          err.response?.data?.message ||
+        err.graphQLErrors?.[0]?.message ||
           err.message ||
           "Something went wrong!",
       );

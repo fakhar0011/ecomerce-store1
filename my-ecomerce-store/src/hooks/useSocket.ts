@@ -22,11 +22,11 @@ export const useSocket = () => {
       transports: ["websocket"],
     });
     socketRef.current.on("connect", () => {
-      console.log("✅ Frontend socket connected");
+      // console.log("✅ Frontend socket connected");
       setIsConnected(true);
     });
     socketRef.current.on("disconnect", () => {
-      console.log("❌ Frontend socket disconnected");
+      // console.log("❌ Frontend socket disconnected");
       setIsConnected(false);
     });
     socketRef.current.on("connect_error", (err: Error) => {

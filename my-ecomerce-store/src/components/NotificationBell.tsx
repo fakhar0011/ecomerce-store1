@@ -1,15 +1,58 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { markAsRead, markAllAsRead } from "@/store/slices/notificationSlice";
-import { markAdminNotificationRead } from "@/lib/admin.service"; // ✅ import API
+import { useQuery, useMutation, useSubscription } from "@apollo/client/react";
+import { useRouter } from "next/navigation";
+import { useAuthSelector } from "@/store/hooks";
+import {
+  GET_USER_NOTIFICATIONS,
+  UserNotificationsResponse,
+} from "@/graphql/queries";
+import { MARK_USER_NOTIFICATION_READ } from "@/graphql/mutations";
+import {
+  ORDER_NOTIFICATION_SUBSCRIPTION,
+  OrderNotificationSubscriptionData,
+} from "@/graphql/subscriptions";
+import { toast } from "react-toastify";
 
 export default function NotificationBell() {
+  const router = useRouter();
+  const { isAuthenticated, user } = useAuthSelector();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const dispatch = useAppDispatch();
-  const notifications = useAppSelector((state) => state.notifications.items);
+
+  // ✅ 1. Fetch notifications from GraphQL
+  const { data, loading, refetch } = useQuery<UserNotificationsResponse>(
+    GET_USER_NOTIFICATIONS,
+    {
+      skip: !isAuthenticated,
+      fetchPolicy: "network-only",
+    },
+  );
+
+  // ✅ 2. Real-time subscription for new notifications
+  useSubscription(ORDER_NOTIFICATION_SUBSCRIPTION, {
+    skip: !isAuthenticated || !user?.id,
+    variables: { userId: user?.id },
+    onData: ({ data }) => {
+      // console.log("📩 Subscription received data:", data);
+      const subscriptionData =
+        data as unknown as OrderNotificationSubscriptionData;
+      const notif = subscriptionData?.orderNotification;
+      if (notif) {
+        toast.info(`${notif.title}: ${notif.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        refetch();
+      }
+    },
+  });
+
+  // ✅ 3. Mark as read mutation
+  const [markRead] = useMutation(MARK_USER_NOTIFICATION_READ);
+
+  const notifications = data?.getUserNotifications || [];
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Close dropdown when clicking outside
@@ -26,33 +69,34 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ✅ Fixed: handleNotificationClick with await refetch
   const handleNotificationClick = async (notif: any) => {
-    // 1. Mark as read locally in Redux
-    dispatch(markAsRead(notif.id));
-
-    // 2. If this is an admin notification (has dbId), mark read in database
-    if (notif.dbId) {
+    if (!notif.read) {
       try {
-        await markAdminNotificationRead(notif.dbId);
-        console.log("✅ Database notification marked read:", notif.dbId);
+        await markRead({ variables: { id: notif._id } });
+        await refetch(); // ✅ Wait for refetch to complete
       } catch (err) {
-        console.error("Failed to mark read in DB:", err);
+        console.error("Failed to mark read:", err);
       }
     }
-
-    // Optional: navigate to order details if orderId exists
     if (notif.orderId) {
       // router.push(`/orders/${notif.orderId}`);
     }
   };
 
-  const handleMarkAllRead = () => {
-    // Mark all as read locally
-    dispatch(markAllAsRead());
-
-    // For admin notifications, you could call a separate API to mark all DB notifications as read
-    // (optional – can be implemented later)
+  const handleMarkAllRead = async () => {
+    const unread = notifications.filter((n) => !n.read);
+    for (const n of unread) {
+      try {
+        await markRead({ variables: { id: n._id } });
+      } catch (err) {
+        console.error("Failed to mark read:", err);
+      }
+    }
+    await refetch(); // ✅ Wait for refetch to complete
   };
+
+  if (!isAuthenticated) return null;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -81,7 +125,12 @@ export default function NotificationBell() {
               </button>
             )}
           </div>
-          {notifications.length === 0 ? (
+
+          {loading ? (
+            <div className="p-6 text-center text-gray-400 text-sm">
+              Loading...
+            </div>
+          ) : notifications.length === 0 ? (
             <div className="p-6 text-center text-gray-400 text-sm">
               No notifications yet.
             </div>
@@ -89,7 +138,7 @@ export default function NotificationBell() {
             <div className="divide-y divide-gray-100">
               {notifications.map((notif) => (
                 <div
-                  key={notif.id}
+                  key={notif._id}
                   onClick={() => handleNotificationClick(notif)}
                   className={`p-3 cursor-pointer hover:bg-gray-50 transition ${
                     !notif.read ? "bg-indigo-50" : ""
@@ -111,7 +160,12 @@ export default function NotificationBell() {
                         {notif.message}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(notif.createdAt).toLocaleTimeString()}
+                        {new Date(notif.createdAt).toLocaleTimeString("en-PK", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          day: "numeric",
+                          month: "short",
+                        })}
                       </p>
                     </div>
                     {!notif.read && (

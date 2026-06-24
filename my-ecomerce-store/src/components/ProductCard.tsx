@@ -40,9 +40,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
     // ← Stock limit check
     if (isStockFull) {
-      toast.warning(
-        `⚠️ Sorry! just ${product.stock} left!`,
-      );
+      toast.warning(`⚠️ Sorry! just ${product.stock} left!`);
       return;
     }
 
@@ -138,16 +136,10 @@ export default function ProductCard({ product }: ProductCardProps) {
             {isOutOfStock
               ? "Out of stock"
               : isStockFull
-                ? `Max limit reached (${product.stock})` // ← Limit reach ho gayi
+                ? `Max limit reached (${product.stock})`
                 : `${product.stock} in stock`}
           </p>
         </div>
-
-        {/* {cartQuantity > 0 && (
-          <p className="text-xs text-indigo-600 font-medium">
-            🛒 {cartQuantity} already in cart
-          </p>
-        )} */}
 
         {/* Add to Cart Button */}
         <button
@@ -169,7 +161,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             : isOutOfStock
               ? "Out of Stock"
               : isStockFull
-                ? `Max Limit (${product.stock})` // ← Button text change
+                ? `Max Limit (${product.stock})`
                 : !isAuthenticated
                   ? "Login to Buy"
                   : "Add to Cart"}
