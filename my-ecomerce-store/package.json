@@ -3,9 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "ts-node-dev --respawn --transpile-only app.ts",
+    "start": "node dist/app.js",
     "lint": "eslint"
   },
   "dependencies": {
@@ -30,6 +29,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-helmet": "^6.1.0",
+    "react-helmet-async": "^3.0.0",
     "react-hook-form": "^7.74.0",
     "react-redux": "^9.2.0",
     "react-toastify": "^11.1.0",
