@@ -13,12 +13,11 @@ services:
       - PORT=5000
       - MONGO_URI=mongodb://mongo:27017/ecommerce
       - JWT_SECRET=c19fdda5edff3d65ebf5de26992aa2ddbe38818f516bf9db53ec0c94b28536d2
-      - REDIS_URL=redis://redis:6379
-      - FRONTEND_URL=http://frontend:3000
+      - REDIS_URL=rediss://default:gQAAAAAAAaHYAAIgcDFjZDkwYzhkMjk0Yjc0MzlmODY1OTJlN2RiOTJkZTg3NA@free-sculpin-106968.upstash.io:6379
+      - FRONTEND_URL=http://localhost:3000
       - NODE_ENV=development
     depends_on:
       - mongo
-      - redis
     restart: unless-stopped
 
   frontend:
@@ -30,8 +29,8 @@ services:
       - ./my-ecomerce-store:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_GRAPHQL_URL=http://backend:5000/graphql
-      - NEXT_PUBLIC_WS_URL=ws://backend:5000/graphql
+      - NEXT_PUBLIC_GRAPHQL_URL=http://localhost:5000/graphql
+      - NEXT_PUBLIC_WS_URL=ws://localhost:5000/graphql
     depends_on:
       - backend
     restart: unless-stopped
@@ -45,15 +44,5 @@ services:
       - mongo_data:/data/db
     restart: unless-stopped
 
-  redis:
-    image: redis:alpine
-    container_name: app-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-
 volumes:
   mongo_data:
-  redis_data:
