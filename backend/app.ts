@@ -5,8 +5,10 @@ import dotenv from "dotenv";
 import { ApolloServer } from "apollo-server-express";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { WebSocketServer } from "ws";
-// @ts-ignore
-import { useServer } from "graphql-ws";
+// ✅ Option A: Direct import (version 6)
+import { useServer } from "graphql-ws/use/ws";
+// ✅ Option B: Agar upar wala kaam na kare toh:
+// const { useServer } = require('graphql-ws/use/ws');
 import jwt from "jsonwebtoken";
 import { connectDB } from "./config/db";
 import authRoutes from "./routes/auth.routes";
@@ -95,6 +97,7 @@ const getWebSocketUser = (connectionParams: any) => {
   return { user: null };
 };
 
+// ✅ useServer with correct import
 useServer(
   {
     schema,
@@ -113,18 +116,25 @@ useServer(
 // Start Servers
 // ============================================================
 async function startServers() {
-  await redisClient.connect();
-  await apolloServer.start();
-  apolloServer.applyMiddleware({ app: app as any, path: "/graphql" });
+  try {
+    await redisClient.connect();
+    console.log("✅ Redis connected");
 
-  await connectDB();
+    await apolloServer.start();
+    apolloServer.applyMiddleware({ app: app as any, path: "/graphql" });
 
-  const PORT = parseInt(process.env.PORT as string, 10) || 5000;
-  httpServer.listen(PORT, () => {
-    console.log(`✅ Server running on http://localhost:${PORT}`);
-    console.log(`✅ GraphQL endpoint: http://localhost:${PORT}/graphql`);
-    console.log(`✅ WebSocket endpoint: ws://localhost:${PORT}/graphql`);
-  });
+    await connectDB();
+
+    const PORT = parseInt(process.env.PORT as string, 10) || 5000;
+    httpServer.listen(PORT, () => {
+      console.log(`✅ Server running on http://localhost:${PORT}`);
+      console.log(`✅ GraphQL endpoint: http://localhost:${PORT}/graphql`);
+      console.log(`✅ WebSocket endpoint: ws://localhost:${PORT}/graphql`);
+    });
+  } catch (error) {
+    console.error("❌ Startup error:", error);
+    process.exit(1);
+  }
 }
 
 startServers().catch(console.error);

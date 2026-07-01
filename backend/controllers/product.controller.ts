@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import ProductModel from "../models/Product";
+import { uploadImage } from "../services/imagekit.service";
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
@@ -45,8 +46,6 @@ export const createProduct = async (
       return;
     }
 
-    const { uploadImage } = await import("../services/imagekit.service");
-
     const imageResult = await uploadImage(file);
 
     const product = await ProductModel.create({
@@ -73,7 +72,6 @@ export const updateProduct = async (
     const updateData: any = { ...req.body };
     const file = (req as any).file;
     if (file) {
-      const { uploadImage } = await import("../services/imagekit.service");
       const imageResult = await uploadImage(file);
       updateData.image = imageResult.url;
     }
