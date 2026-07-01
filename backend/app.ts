@@ -22,10 +22,14 @@ dotenv.config();
 const app: Application = express();
 app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }));
 
-// CORS
-const allowedOrigins = process.env.FRONTEND_URL
-  ? [process.env.FRONTEND_URL, "https://studio.apollographql.com"]
-  : ["http://localhost:3000", "https://studio.apollographql.com"];
+// ✅ CORS - Fixed (no undefined values)
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://p01--frontend--rr45mr2qrdg7.code.run",
+  "https://studio.apollographql.com",
+].concat(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []);
+
+console.log("✅ CORS allowed origins:", allowedOrigins);
 
 app.use(
   cors({
@@ -122,9 +126,9 @@ async function startServers() {
 
   const PORT = parseInt(process.env.PORT as string, 10) || 5000;
   httpServer.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`GraphQL endpoint: http://localhost:${PORT}/graphql`);
-    console.log(`WebSocket endpoint: ws://localhost:${PORT}/graphql`);
+    console.log(`✅ Server running on http://localhost:${PORT}`);
+    console.log(`✅ GraphQL endpoint: http://localhost:${PORT}/graphql`);
+    console.log(`✅ WebSocket endpoint: ws://localhost:${PORT}/graphql`);
   });
 }
 
