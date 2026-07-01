@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import { ApolloServer } from "apollo-server-express";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { WebSocketServer } from "ws";
-import { useServer } from "graphql-ws/use/ws";
+import { useServer } from "graphql-ws/dist/use/ws"; // ✅ Sahi import
 import jwt from "jsonwebtoken";
 import { connectDB } from "./config/db";
 import authRoutes from "./routes/auth.routes";
@@ -22,9 +22,7 @@ dotenv.config();
 const app: Application = express();
 app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }));
 
-// ✅ CORS - Full Open (For Testing)
-// ✅ CORS - Allow all origins with credentials
-// ✅ CORS - Allow all origins with credentials
+// ✅ CORS - Full Open
 app.use(
   cors({
     origin: (origin, callback) => {
