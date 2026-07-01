@@ -6,7 +6,7 @@ import { setContext } from "@apollo/client/link/context";
 import createUploadLink from "apollo-upload-client/UploadHttpLink.mjs";
 
 const uploadLink = new createUploadLink({
-  uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || "",
+  uri: "https://p01--ecomerce-store1--rr45mr2qrdg7.code.run/graphql",
 });
 
 const authLink = setContext((_, { headers }) => {
