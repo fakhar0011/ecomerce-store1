@@ -6,7 +6,7 @@ import { setContext } from "@apollo/client/link/context";
 import createUploadLink from "apollo-upload-client/UploadHttpLink.mjs";
 
 const uploadLink = new createUploadLink({
-  uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || "http://localhost:5000/graphql",
+  uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || "",
 });
 
 const authLink = setContext((_, { headers }) => {
@@ -22,7 +22,7 @@ const authLink = setContext((_, { headers }) => {
 
 const wsLink = new GraphQLWsLink(
   createClient({
-    url: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:5000/graphql",
+    url: process.env.NEXT_PUBLIC_WS_URL || "",
     connectionParams: () => {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
