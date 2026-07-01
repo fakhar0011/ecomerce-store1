@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import { ApolloServer } from "apollo-server-express";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { WebSocketServer } from "ws";
-import { useServer } from "graphql-ws/dist/use/ws"; // ✅ Sahi import
+import { useServer } from "graphql-ws/use/ws";
 import jwt from "jsonwebtoken";
 import { connectDB } from "./config/db";
 import authRoutes from "./routes/auth.routes";
