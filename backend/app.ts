@@ -24,10 +24,11 @@ app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }));
 
 // ✅ CORS - Full Open (For Testing)
 // ✅ CORS - Allow all origins with credentials
+// ✅ CORS - Allow all origins with credentials
 app.use(
   cors({
     origin: (origin, callback) => {
-      callback(null, true); // ✅ All origins allowed
+      callback(null, true);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

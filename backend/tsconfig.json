@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2017",
     "module": "commonjs",
-    // "moduleResolution": "bundler",
+    "moduleResolution": "bundler", // ✅ bundler use karo
     "lib": ["ES2017"],
     "outDir": "./dist",
     "esModuleInterop": true,
@@ -10,14 +10,13 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": [
-    "app.ts",
-    "config/**/*",
-    "models/**/*",
-    "graphql/**/*",
-    "routes/**/*",
-    "controllers/**/*",
-    "middlewares/**/*"
-  ],
-  "exclude": ["node_modules", "dist"]
+  "include": ["app.ts", "config/**/*", "models/**/*", "graphql/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "controllers",
+    "middlewares",
+    "routes",
+    "socket.ts"
+  ]
 }
