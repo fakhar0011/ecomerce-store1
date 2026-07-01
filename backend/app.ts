@@ -22,18 +22,13 @@ dotenv.config();
 const app: Application = express();
 app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }));
 
-// ✅ CORS - Fixed (no undefined values)
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://p01--frontend--rr45mr2qrdg7.code.run",
-  "https://studio.apollographql.com",
-].concat(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []);
-
-console.log("✅ CORS allowed origins:", allowedOrigins);
-
+// ✅ CORS - Full Open (For Testing)
+// ✅ CORS - Allow all origins with credentials
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      callback(null, true); // ✅ All origins allowed
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -103,11 +98,11 @@ const getWebSocketUser = (connectionParams: any) => {
 useServer(
   {
     schema,
-    onConnect: (ctx) => {
+    onConnect: (ctx: any) => {
       const userContext = getWebSocketUser(ctx.connectionParams);
       return { ...userContext };
     },
-    context: (ctx) => {
+    context: (ctx: any) => {
       return ctx;
     },
   },
