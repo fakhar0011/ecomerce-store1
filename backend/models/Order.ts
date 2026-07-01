@@ -18,6 +18,8 @@ export interface IOrder extends Document {
   };
   totalAmount: number;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const OrderSchema = new Schema(
@@ -50,5 +52,6 @@ const OrderSchema = new Schema(
 );
 
 const OrderModel =
-  mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);
+  (mongoose.models.Order as mongoose.Model<IOrder>) ||
+  mongoose.model<IOrder>("Order", OrderSchema);
 export default OrderModel;

@@ -23,7 +23,6 @@ const UserNotificationSchema = new Schema<IUserNotification>(
   { timestamps: true },
 );
 
-export default mongoose.model<IUserNotification>(
-  "UserNotification",
-  UserNotificationSchema,
-);
+export default (mongoose.models
+  .UserNotification as mongoose.Model<IUserNotification>) ||
+  mongoose.model<IUserNotification>("UserNotification", UserNotificationSchema);

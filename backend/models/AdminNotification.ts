@@ -14,7 +14,8 @@ const AdminNotificationSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.models.AdminNotification ||
+export default (mongoose.models
+  .AdminNotification as mongoose.Model<IAdminNotification>) ||
   mongoose.model<IAdminNotification>(
     "AdminNotification",
     AdminNotificationSchema,

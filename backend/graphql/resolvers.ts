@@ -61,7 +61,7 @@ export const resolvers = {
     products: async () => {
       try {
         const cached = await redisClient.get("products");
-        if (cached) {
+        if (cached && typeof cached === "string") {
           console.log("Serving products from Redis cache");
           return JSON.parse(cached);
         }
