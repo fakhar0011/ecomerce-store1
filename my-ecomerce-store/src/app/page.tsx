@@ -67,15 +67,16 @@ export default function HomePage() {
               No products found
             </div>
           ) : (
-            <div className={`relative ${isMobile ? "px-8 sm:px-12" : ""}`}>
+            <div className="relative">
               <Swiper
                 modules={[Autoplay, Navigation, Pagination]}
-                spaceBetween={16}
-                slidesPerView={1} // ✅ 1 card at a time
-                slidesPerGroup={1} // ✅ 1 card per click
+                spaceBetween={isMobile ? 8 : 16}
+                slidesPerView={isMobile ? 1.3 : 1}
+                slidesPerGroup={1}
                 loop={true}
                 autoplay={autoplayConfig}
                 speed={isMobile ? 400 : 2800}
+                centeredSlides={isMobile ? false : false}
                 navigation={
                   isMobile
                     ? {
@@ -93,9 +94,26 @@ export default function HomePage() {
                     : false
                 }
                 breakpoints={{
-                  480: { slidesPerView: 1, slidesPerGroup: 1 }, // ✅ Mobile: 1
-                  768: { slidesPerView: 3, slidesPerGroup: 1 }, // ✅ Tablet: 3
-                  1024: { slidesPerView: 4, slidesPerGroup: 1 }, // ✅ Desktop: 4
+                  480: {
+                    slidesPerView: 1.3,
+                    slidesPerGroup: 1,
+                    spaceBetween: 8,
+                  },
+                  640: {
+                    slidesPerView: 2,
+                    slidesPerGroup: 1,
+                    spaceBetween: 12,
+                  },
+                  768: {
+                    slidesPerView: 3,
+                    slidesPerGroup: 1,
+                    spaceBetween: 16,
+                  },
+                  1024: {
+                    slidesPerView: 4,
+                    slidesPerGroup: 1,
+                    spaceBetween: 16,
+                  },
                 }}
                 className="w-full pb-12"
               >
@@ -133,18 +151,19 @@ export default function HomePage() {
                 ))}
               </Swiper>
 
-              {/* ✅ Mobile: Left Arrow */}
+              {/* ✅ Mobile: Smaller Arrows */}
               {isMobile && (
                 <>
+                  {/* Left Arrow */}
                   <button
                     className="swiper-button-prev-custom absolute left-0 top-1/2 -translate-y-1/2 z-10
-                               bg-white hover:bg-gray-100 text-gray-800 w-10 h-10 rounded-full shadow-lg
+                               bg-white/90 hover:bg-white text-gray-700 w-8 h-8 rounded-full shadow-md
                                flex items-center justify-center transition-all duration-200
-                               border border-gray-200 hover:shadow-xl"
+                               border border-gray-300 hover:shadow-lg -ml-2"
                     aria-label="Previous"
                   >
                     <svg
-                      className="w-6 h-6"
+                      className="w-4 h-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -158,16 +177,16 @@ export default function HomePage() {
                     </svg>
                   </button>
 
-                  {/* ✅ Mobile: Right Arrow */}
+                  {/* Right Arrow */}
                   <button
                     className="swiper-button-next-custom absolute right-0 top-1/2 -translate-y-1/2 z-10
-                               bg-white hover:bg-gray-100 text-gray-800 w-10 h-10 rounded-full shadow-lg
+                               bg-white/90 hover:bg-white text-gray-700 w-8 h-8 rounded-full shadow-md
                                flex items-center justify-center transition-all duration-200
-                               border border-gray-200 hover:shadow-xl"
+                               border border-gray-300 hover:shadow-lg -mr-2"
                     aria-label="Next"
                   >
                     <svg
-                      className="w-6 h-6"
+                      className="w-4 h-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
