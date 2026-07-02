@@ -19,26 +19,21 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [added, setAdded] = useState<boolean>(false);
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAuthSelector();
-  const { items } = useCartSelector(); // ← Cart items lo
+  const { items } = useCartSelector();
   const router = useRouter();
 
-  // ← Cart mein is product ki current quantity
   const cartItem = items.find((item) => item.product._id === product._id);
   const cartQuantity = cartItem ? cartItem.quantity : 0;
 
-  // ← Kya stock khatam ho gaya?
   const isOutOfStock = product.stock === 0;
   const isStockFull = cartQuantity >= product.stock;
-  // cartQuantity >= stock → aur add nahi ho sakta
 
   const handleAddToCart = (): void => {
-    // Login check
     if (!isAuthenticated) {
       router.push("/login");
       return;
     }
 
-    // ← Stock limit check
     if (isStockFull) {
       toast.warning(`⚠️ Sorry! just ${product.stock} left!`);
       return;
@@ -49,6 +44,26 @@ export default function ProductCard({ product }: ProductCardProps) {
     toast.success(`🛒 ${product.name} has been added to the cart!`);
     setTimeout(() => setAdded(false), 1500);
   };
+
+  let buttonText = "Add to Cart";
+  let isDisabled = false;
+  let buttonVariant = "";
+
+  if (added) {
+    buttonText = "✓ Added";
+    buttonVariant = "added";
+  } else if (isOutOfStock) {
+    buttonText = "Out of Stock";
+    isDisabled = true;
+    buttonVariant = "disabled";
+  } else if (isStockFull) {
+    buttonText = `Max Limit (${product.stock})`;
+    isDisabled = true;
+    buttonVariant = "disabled";
+  } else if (!isAuthenticated) {
+    buttonText = "Login to Buy";
+    buttonVariant = "login";
+  }
 
   return (
     <div
@@ -70,7 +85,6 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* Badge */}
         {product.badge && (
           <span
             className="absolute top-3 right-3 text-xs font-medium
@@ -83,17 +97,14 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       {/* Product Info */}
       <div className="p-5 flex flex-col gap-2">
-        {/* Name */}
         <p className="font-semibold text-gray-900 text-base leading-tight">
           {product.name}
         </p>
 
-        {/* Category */}
         <p className="text-xs text-gray-400 capitalize tracking-wide">
           {product.category}
         </p>
 
-        {/* Rating */}
         {product.rating && product.rating > 0 ? (
           <div className="flex items-center gap-1.5">
             <div className="flex">
@@ -116,12 +127,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         ) : null}
 
-        {/* Price */}
         <p className="text-xl font-bold text-gray-900">
           Rs {product.price.toLocaleString()}
         </p>
 
-        {/* Stock */}
         <div className="flex items-center gap-1.5">
           <div
             className={`w-2 h-2 rounded-full ${
@@ -141,31 +150,81 @@ export default function ProductCard({ product }: ProductCardProps) {
           </p>
         </div>
 
-        {/* Add to Cart Button */}
+        {/* ✅ Smooth Shine Button */}
         <button
           onClick={handleAddToCart}
-          disabled={isOutOfStock || isStockFull}
-          className={`mt-2 w-full py-2.5 rounded-xl text-sm font-medium
-            transition duration-200 ${
-              added
-                ? "bg-green-600 text-white scale-95"
-                : isOutOfStock
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : isStockFull
-                    ? "bg-orange-100 text-orange-500 cursor-not-allowed"
-                    : "border border-gray-300 hover:bg-gray-900 hover:text-white active:scale-95"
-            }`}
+          disabled={isDisabled}
+          className={`shine-btn w-full mt-2 ${
+            buttonVariant === "disabled" ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          style={{
+            backgroundColor:
+              buttonVariant === "added"
+                ? "#66af81"
+                : buttonVariant === "login"
+                  ? "#7572af"
+                  : buttonVariant === "disabled"
+                    ? "#d1d5db"
+                    : "rgb(86, 125, 150)",
+            color: buttonVariant === "disabled" ? "#9ca3af" : "white",
+            border:
+              buttonVariant === "disabled"
+                ? "3px solid #e5e7eb"
+                : "3px solid #ffffff4d",
+          }}
         >
-          {added
-            ? "✓ Added to Cart"
-            : isOutOfStock
-              ? "Out of Stock"
-              : isStockFull
-                ? `Max Limit (${product.stock})`
-                : !isAuthenticated
-                  ? "Login to Buy"
-                  : "Add to Cart"}
+          <span className="relative z-10 flex items-center justify-center gap-2">
+            {buttonText}
+            {buttonVariant === "login"}
+            {buttonVariant === "added"}
+          </span>
         </button>
+
+        <style jsx>{`
+          .shine-btn {
+            position: relative;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+            padding-block: 0.5rem;
+            padding-inline: 1.25rem;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: bold;
+            outline: none;
+            overflow: hidden;
+            font-size: 15px;
+            cursor: pointer;
+          }
+
+          .shine-btn:not(:disabled):hover {
+            transform: scale(1.05);
+            border-color: #fff9;
+          }
+
+          .shine-btn::before {
+            content: "";
+            position: absolute;
+            width: 100px;
+            height: 100%;
+            background-image: linear-gradient(
+              120deg,
+              rgba(255, 255, 255, 0) 30%,
+              rgba(255, 255, 255, 0.8),
+              rgba(255, 255, 255, 0) 70%
+            );
+            top: 0;
+            left: -100px;
+            opacity: 0.6;
+            transition: left 0.8s ease-in-out;
+          }
+
+          .shine-btn:not(:disabled):hover::before {
+            left: 150%;
+          }
+        `}</style>
       </div>
     </div>
   );

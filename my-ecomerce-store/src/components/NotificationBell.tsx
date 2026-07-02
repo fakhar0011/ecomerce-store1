@@ -21,7 +21,6 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ✅ 1. Fetch notifications from GraphQL
   const { data, loading, refetch } = useQuery<UserNotificationsResponse>(
     GET_USER_NOTIFICATIONS,
     {
@@ -30,12 +29,10 @@ export default function NotificationBell() {
     },
   );
 
-  // ✅ 2. Real-time subscription for new notifications
   useSubscription(ORDER_NOTIFICATION_SUBSCRIPTION, {
     skip: !isAuthenticated || !user?.id,
     variables: { userId: user?.id },
     onData: ({ data }) => {
-      // console.log("📩 Subscription received data:", data);
       const subscriptionData =
         data as unknown as OrderNotificationSubscriptionData;
       const notif = subscriptionData?.orderNotification;
@@ -49,13 +46,11 @@ export default function NotificationBell() {
     },
   });
 
-  // ✅ 3. Mark as read mutation
   const [markRead] = useMutation(MARK_USER_NOTIFICATION_READ);
 
   const notifications = data?.getUserNotifications || [];
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -69,12 +64,11 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✅ Fixed: handleNotificationClick with await refetch
   const handleNotificationClick = async (notif: any) => {
     if (!notif.read) {
       try {
         await markRead({ variables: { id: notif._id } });
-        await refetch(); // ✅ Wait for refetch to complete
+        refetch();
       } catch (err) {
         console.error("Failed to mark read:", err);
       }
@@ -93,7 +87,7 @@ export default function NotificationBell() {
         console.error("Failed to mark read:", err);
       }
     }
-    await refetch(); // ✅ Wait for refetch to complete
+    refetch();
   };
 
   if (!isAuthenticated) return null;
@@ -113,30 +107,40 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
-          <div className="p-3 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white">
-            <h3 className="font-semibold text-gray-900">Notifications</h3>
+        <div
+          className="absolute right-0 mt-2 
+                     w-[calc(100vw-1rem)] max-w-[360px] sm:w-80 
+                     bg-white rounded-lg shadow-xl border border-gray-200 z-50 
+                     max-h-[80vh] overflow-y-auto
+                     left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0"
+        >
+          {/* Sticky Header */}
+          <div className="p-3 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
+              Notifications
+            </h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-indigo-600 hover:underline"
+                className="text-xs text-indigo-600 hover:underline whitespace-nowrap"
               >
                 Mark all as read
               </button>
             )}
           </div>
 
-          {loading ? (
-            <div className="p-6 text-center text-gray-400 text-sm">
-              Loading...
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="p-6 text-center text-gray-400 text-sm">
-              No notifications yet.
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {notifications.map((notif) => (
+          {/* Content */}
+          <div className="divide-y divide-gray-100">
+            {loading ? (
+              <div className="p-6 text-center text-gray-400 text-sm">
+                Loading...
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="p-6 text-center text-gray-400 text-sm">
+                No notifications yet.
+              </div>
+            ) : (
+              notifications.map((notif) => (
                 <div
                   key={notif._id}
                   onClick={() => handleNotificationClick(notif)}
@@ -145,18 +149,18 @@ export default function NotificationBell() {
                   }`}
                 >
                   <div className="flex items-start gap-2">
-                    <span className="text-sm">
+                    <span className="text-sm flex-shrink-0 mt-0.5">
                       {notif.type === "success"
                         ? "✅"
                         : notif.type === "error"
                           ? "❌"
                           : "ℹ️"}
                     </span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 break-words leading-tight">
                         {notif.title}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-gray-500 mt-0.5 break-words leading-relaxed">
                         {notif.message}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
@@ -169,13 +173,13 @@ export default function NotificationBell() {
                       </p>
                     </div>
                     {!notif.read && (
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full mt-2"></div>
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full mt-2 flex-shrink-0"></div>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
